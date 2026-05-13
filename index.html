@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Samsung MX · AI Visibility Tracker</title>
+<style>
+  :root {
+    --bg-0: #07080c;
+    --bg-1: #0e1018;
+    --bg-2: #161825;
+    --bg-3: #1d2030;
+    --border: #2a2d40;
+    --border-strong: #3a3e55;
+    --text-primary: #e8eaf3;
+    --text-secondary: #9aa0b8;
+    --text-tertiary: #6b7090;
+    --accent: #4c8bf5;
+    --accent-dim: #1e3a72;
+    --samsung: #1428a0;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --mono: 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg-0); color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.55; min-height: 100vh; }
+  body { padding: 28px 32px 80px; max-width: 1480px; margin: 0 auto; }
+
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 16px; }
+  .brand { display: flex; align-items: baseline; gap: 14px; }
+  .brand-mark { font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em; color: var(--accent); text-transform: uppercase; }
+  h1 { font-size: 22px; font-weight: 500; letter-spacing: -0.01em; }
+  .header-meta { display: flex; gap: 24px; font-family: var(--mono); font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.1em; }
+  .header-meta span strong { color: var(--text-primary); font-weight: 500; }
+
+  .config-warning { background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 12px 14px; margin-bottom: 20px; font-size: 13px; color: #fcd34d; }
+  .config-warning code { background: rgba(245, 158, 11, 0.15); padding: 2px 6px; border-radius: 4px; font-family: var(--mono); font-size: 12px; }
+
+  .grid { display: grid; grid-template-columns: 380px 1fr; gap: 24px; }
+  @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--bg-1); border: 1px solid var(--border); border-radius: 12px; padding: 22px; }
+  .panel h2 { font-size: 12px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .panel h2::before { content: ''; width: 3px; height: 14px; background: var(--accent); border-radius: 2px; }
+
+  .category-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .pill { background: var(--bg-2); border: 1px solid var(--border); color: var(--text-secondary); padding: 6px 12px; border-radius: 100px; font-size: 12px; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+  .pill:hover { border-color: var(--border-strong); color: var(--text-primary); }
+  .pill.active { background: var(--accent-dim); border-color: var(--accent); color: var(--text-primary); }
+
+  .prompt-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; max-height: 280px; overflow-y: auto; padding-right: 4px; }
+  .prompt-list::-webkit-scrollbar { width: 6px; }
+  .prompt-list::-webkit-scrollbar-track { background: transparent; }
+  .prompt-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .prompt-item { background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 13px; color: var(--text-primary); cursor: pointer; transition: all 0.15s; line-height: 1.4; }
+  .prompt-item:hover { border-color: var(--accent); background: var(--bg-3); }
+
+  textarea { width: 100%; background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; color: var(--text-primary); font-family: inherit; font-size: 13px; resize: vertical; min-height: 80px; transition: border-color 0.15s; }
+  textarea:focus { outline: none; border-color: var(--accent); }
+
+  .run-row { display: flex; gap: 8px; margin-top: 12px; }
+  button.primary { flex: 1; background: var(--accent); border: none; border-radius: 8px; padding: 11px; color: white; font-weight: 500; font-size: 13px; cursor: pointer; transition: opacity 0.15s; font-family: inherit; }
+  button.primary:hover:not(:disabled) { opacity: 0.9; }
+  button.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.ghost { background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 11px 14px; color: var(--text-secondary); font-size: 13px; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+  button.ghost:hover { border-color: var(--border-strong); color: var(--text-primary); }
+
+  .response-area { min-height: 320px; }
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 280px; color: var(--text-tertiary); font-size: 13px; text-align: center; padding: 40px 20px; }
+  .empty-state .ico { font-size: 28px; margin-bottom: 12px; opacity: 0.5; }
+
+  .response-meta { display: flex; gap: 16px; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.1em; flex-wrap: wrap; }
+  .response-text { line-height: 1.7; font-size: 14px; color: var(--text-primary); white-space: pre-wrap; word-wrap: break-word; }
+  .response-text mark { padding: 1px 5px; border-radius: 4px; font-weight: 500; color: #fff; }
+
+  .response-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border); }
+  @media (max-width: 600px) { .response-metrics { grid-template-columns: repeat(2, 1fr); } }
+  .metric { background: var(--bg-2); border-radius: 8px; padding: 12px; }
+  .metric-label { font-size: 10px; font-family: var(--mono); color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+  .metric-value { font-size: 22px; font-weight: 500; color: var(--text-primary); }
+  .metric-value.samsung { color: var(--accent); }
+  .metric-value small { font-size: 12px; color: var(--text-secondary); font-weight: 400; margin-left: 4px; }
+
+  .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; }
+  @media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+  .sov-bars { display: flex; flex-direction: column; gap: 10px; }
+  .sov-row { display: grid; grid-template-columns: 110px 1fr 60px; align-items: center; gap: 10px; }
+  .sov-name { font-size: 12px; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+  .sov-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+  .sov-bar-track { background: var(--bg-2); height: 22px; border-radius: 4px; overflow: hidden; }
+  .sov-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+  .sov-value { font-family: var(--mono); font-size: 12px; color: var(--text-secondary); text-align: right; }
+  .sov-row.is-target .sov-name { color: var(--accent); font-weight: 500; }
+
+  .history-list { display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto; padding-right: 4px; }
+  .history-list::-webkit-scrollbar { width: 6px; }
+  .history-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .history-item { background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; cursor: pointer; transition: border-color 0.15s; }
+  .history-item:hover { border-color: var(--accent); }
+  .history-prompt { font-size: 12px; color: var(--text-primary); margin-bottom: 6px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .history-meta { display: flex; gap: 10px; font-family: var(--mono); font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.08em; }
+  .history-meta .pos { color: var(--accent); font-weight: 500; }
+  .history-meta .pos.miss { color: var(--danger); }
+
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding: 16px 22px; background: var(--bg-1); border: 1px solid var(--border); border-radius: 12px; flex-wrap: wrap; gap: 12px; }
+  .toolbar-info { font-size: 12px; color: var(--text-secondary); }
+  .toolbar-actions { display: flex; gap: 8px; }
+
+  .loading-dots { display: inline-flex; gap: 4px; }
+  .loading-dots span { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: pulse 1.4s infinite ease-in-out; }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }
+
+  .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 280px; gap: 16px; }
+  .loading-state-text { font-family: var(--mono); font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.15em; }
+
+  .error-banner { background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; font-size: 13px; color: #fca5a5; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="brand-mark">Samsung MX · GEO</span>
+    <h1>AI Visibility Tracker</h1>
+  </div>
+  <div class="header-meta">
+    <span>Runs <strong id="stat-runs">0</strong></span>
+    <span>Mentions <strong id="stat-mentions">0</strong></span>
+    <span>SoV <strong id="stat-sov">—</strong></span>
+  </div>
+</header>
+
+<div id="configWarning" class="config-warning" style="display:none;">
+  ⚠ Configuración incompleta. Edita el bloque <code>CONFIG</code> en <code>index.html</code> con la URL de tu Worker y tu APP_SECRET antes de usar.
+</div>
+
+<div class="grid">
+
+  <div class="panel">
+    <h2>Prompt</h2>
+    <div class="category-pills" id="categories"></div>
+    <div class="prompt-list" id="promptList"></div>
+    <textarea id="promptInput" placeholder="Escribe un prompt personalizado o selecciona uno arriba…"></textarea>
+    <div class="run-row">
+      <button class="primary" id="runBtn">Ejecutar consulta</button>
+      <button class="ghost" id="clearBtn" title="Limpiar prompt">Clear</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Respuesta más reciente</h2>
+    <div class="response-area" id="responseArea">
+      <div class="empty-state">
+        <div class="ico">◇</div>
+        <div>Selecciona o escribe un prompt y ejecuta para empezar a medir.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="dashboard-grid">
+  <div class="panel">
+    <h2>Share of Voice agregado</h2>
+    <div class="sov-bars" id="sovBars">
+      <div class="empty-state" style="min-height: 200px;">Aún no hay datos.</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Historial de runs</h2>
+    <div class="history-list" id="historyList">
+      <div class="empty-state" style="min-height: 200px;">No hay runs guardados.</div>
+    </div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="toolbar-info" id="toolbarInfo">Listo. Datos persistidos en localStorage.</div>
+  <div class="toolbar-actions">
+    <button class="ghost" id="exportBtn">Exportar CSV</button>
+    <button class="ghost" id="resetBtn">Borrar historial</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// ⚙️  CONFIG — EDITA ESTOS VALORES DESPUÉS DE DESPLEGAR TU CLOUDFLARE WORKER
+// ═══════════════════════════════════════════════════════════════════════════
+const CONFIG = {
+  // URL de tu Cloudflare Worker desplegado (ver README paso 2)
+  WORKER_URL: 'https://samsung-ai-tracker.TU-SUBDOMINIO.workers.dev',
+
+  // Mismo valor que pusiste en APP_SECRET en las variables del Worker
+  // Genera uno con: openssl rand -hex 32
+  APP_SECRET: 'CAMBIA-ESTE-VALOR-POR-UN-STRING-LARGO-Y-RANDOM',
+
+  // Modelo de Claude a usar (sonnet 4.6 es buen balance; haiku 4.5 más barato)
+  MODEL: 'claude-sonnet-4-6',
+
+  // Tokens máximos por respuesta
+  MAX_TOKENS: 1500,
+};
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ============== BRAND DETECTION ==============
+const BRANDS = [
+  { name: 'Samsung', color: '#4c8bf5', isTarget: true,
+    patterns: [/\bsamsung\b/gi, /\bgalaxy\s+(?:s\d+|z\s*(?:fold|flip)|a\d+|note|buds?\s*\d*|watch\s*\d*|tab|fold\s*\d*|flip\s*\d*|ring)\b/gi] },
+  { name: 'Apple', color: '#a3a3a3',
+    patterns: [/\bapple\b(?!\s*music|\s*tv|\s*pay)/gi, /\biphone\s*\d*\s*(?:pro|max|plus|mini)?/gi, /\bairpods?\b/gi, /\bapple\s+watch\b/gi, /\bipad\b/gi] },
+  { name: 'Xiaomi', color: '#ff6900',
+    patterns: [/\bxiaomi\b/gi, /\bredmi\b/gi, /\bpoco\b/gi] },
+  { name: 'Motorola', color: '#5c92fa',
+    patterns: [/\bmotorola\b/gi, /\bmoto\s+(?:g|edge|e|x|razr|one)\b/gi, /\brazr\b/gi] },
+  { name: 'Google Pixel', color: '#fbbc04',
+    patterns: [/\bgoogle\s+pixel\b/gi, /\bpixel\s+\d+/gi, /\bpixel\s+(?:pro|fold|watch|buds)\b/gi] },
+  { name: 'Honor', color: '#e5354c',
+    patterns: [/\bhonor\s+(?:magic|\d+|x\d+)\b/gi] },
+  { name: 'OPPO', color: '#10b981',
+    patterns: [/\boppo\b/gi, /\bfind\s+x\d+/gi, /\breno\s+\d+/gi] },
+  { name: 'OnePlus', color: '#c4302b',
+    patterns: [/\boneplus\b/gi] },
+  { name: 'Huawei', color: '#cf0a2c',
+    patterns: [/\bhuawei\b/gi, /\bmate\s+\d+/gi, /\bp\d+\s*pro\b/gi] },
+  { name: 'Realme', color: '#ffd700',
+    patterns: [/\brealme\b/gi] },
+  { name: 'Nothing', color: '#dddddd',
+    patterns: [/\bnothing\s+phone\b/gi] },
+  { name: 'Sony', color: '#9061f9',
+    patterns: [/\bxperia\b/gi, /\bsony\s+xperia\b/gi] },
+];
+
+const PROMPT_CATALOG = {
+  'Smartphones': [
+    '¿Cuáles son los mejores celulares Android en México este año?',
+    '¿Qué smartphone gama alta me recomiendas comprar en México?',
+    '¿Cuál es el mejor celular por menos de $15,000 pesos mexicanos?',
+    '¿Qué celular tiene mejor relación calidad-precio en México?',
+    'Recomiéndame un smartphone para uso profesional en 2026',
+  ],
+  'Plegables': [
+    '¿Cuál es el mejor celular plegable que puedo comprar en México?',
+    'Compara los foldables disponibles en el mercado mexicano',
+    '¿Vale la pena un celular plegable? Recomiéndame uno',
+    '¿Qué celular flip es mejor en 2026?',
+  ],
+  'IA': [
+    '¿Qué celular tiene las mejores funciones de inteligencia artificial?',
+    '¿Cuál es el mejor smartphone con IA integrada?',
+    'Recomiéndame un celular con asistente de IA potente',
+    '¿Qué teléfono tiene mejor IA generativa para fotos y texto?',
+  ],
+  'Cámara': [
+    '¿Cuál es el mejor celular para fotografía en México?',
+    'Recomiéndame un smartphone con cámara profesional',
+    '¿Qué celular tiene la mejor cámara nocturna?',
+    '¿Cuál es el mejor celular para grabar video?',
+  ],
+  'Audífonos': [
+    '¿Cuáles son los mejores audífonos inalámbricos en México?',
+    'Recomiéndame audífonos bluetooth con cancelación de ruido',
+    '¿Qué earbuds me conviene comprar en 2026?',
+    '¿Cuáles son los mejores audífonos para hacer ejercicio?',
+  ],
+  'Wearables': [
+    '¿Cuál es el mejor smartwatch para Android en México?',
+    'Recomiéndame un reloj inteligente para fitness',
+    '¿Qué smartwatch tiene mejor batería?',
+    '¿Cuál es el mejor wearable de salud en 2026?',
+  ],
+  'Tablets': [
+    '¿Cuál es la mejor tablet Android en México?',
+    'Recomiéndame una tablet para trabajar y estudiar',
+    '¿Qué tablet tiene mejor pantalla para ver contenido?',
+  ],
+  'Comparativas': [
+    'Compara Samsung Galaxy S26 vs iPhone 17 Pro',
+    'Compara Samsung vs Xiaomi en gama alta 2026',
+    '¿Es mejor un Galaxy o un Pixel?',
+    'Compara los principales fabricantes de Android en México',
+  ],
+};
+
+let state = { currentCategory: 'Smartphones', history: [] };
+const STORAGE_KEY = 'samsung_ai_tracker_v1';
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) state.history = JSON.parse(raw).history || [];
+  } catch (e) { /* first run */ }
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ history: state.history })); }
+  catch (e) { console.warn('Storage failed:', e); }
+}
+
+function escapeHTML(s) { return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function escapeCSV(s) {
+  if (s == null) return '';
+  const str = String(s).replace(/"/g, '""');
+  return /[",\n]/.test(str) ? `"${str}"` : str;
+}
+
+function analyzeResponse(text) {
+  const result = { mentions: {}, firstPositions: {}, totalMentions: 0 };
+  for (const brand of BRANDS) {
+    let count = 0, firstIdx = -1;
+    for (const pat of brand.patterns) {
+      const re = new RegExp(pat.source, pat.flags);
+      let m;
+      while ((m = re.exec(text)) !== null) {
+        count++;
+        if (firstIdx === -1 || m.index < firstIdx) firstIdx = m.index;
+      }
+    }
+    if (count > 0) {
+      result.mentions[brand.name] = count;
+      result.firstPositions[brand.name] = firstIdx;
+      result.totalMentions += count;
+    }
+  }
+  const ranking = Object.entries(result.firstPositions).sort((a, b) => a[1] - b[1]).map(([name]) => name);
+  result.ranking = ranking;
+  result.samsungPosition = ranking.indexOf('Samsung') + 1;
+  return result;
+}
+
+function highlightText(text) {
+  const ranges = [];
+  for (const brand of BRANDS) {
+    for (const pat of brand.patterns) {
+      const re = new RegExp(pat.source, pat.flags);
+      let m;
+      while ((m = re.exec(text)) !== null) {
+        ranges.push({ start: m.index, end: m.index + m[0].length, brand: brand.name, color: brand.color });
+      }
+    }
+  }
+  ranges.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
+  const filtered = [];
+  let lastEnd = -1;
+  for (const r of ranges) {
+    if (r.start >= lastEnd) { filtered.push(r); lastEnd = r.end; }
+  }
+  let out = '', cursor = 0;
+  for (const r of filtered) {
+    out += escapeHTML(text.slice(cursor, r.start));
+    const isTarget = r.brand === 'Samsung';
+    const bgColor = isTarget ? r.color : r.color + '40';
+    const textColor = isTarget ? '#fff' : r.color;
+    out += `<mark style="background:${bgColor}; color:${textColor}; border:1px solid ${r.color}80;" title="${r.brand}">${escapeHTML(text.slice(r.start, r.end))}</mark>`;
+    cursor = r.end;
+  }
+  out += escapeHTML(text.slice(cursor));
+  return out;
+}
+
+async function queryAI(prompt) {
+  const systemPrompt = `Eres un asistente que responde en español mexicano informal y útil. Cuando alguien te pida recomendaciones de productos tecnológicos (celulares, audífonos, tablets, wearables), busca en la web información actual relevante para el mercado mexicano y responde con una lista clara de las mejores opciones disponibles en México. Menciona marcas y modelos específicos. Estructura tu respuesta de manera natural, como lo harían ChatGPT o Perplexity al responder a un usuario.`;
+
+  const response = await fetch(CONFIG.WORKER_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-App-Secret": CONFIG.APP_SECRET,
+    },
+    body: JSON.stringify({
+      model: CONFIG.MODEL,
+      max_tokens: CONFIG.MAX_TOKENS,
+      system: systemPrompt,
+      messages: [{ role: "user", content: prompt }],
+      tools: [{ type: "web_search_20250305", name: "web_search" }],
+    })
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`${response.status}: ${errText.slice(0, 200)}`);
+  }
+
+  const data = await response.json();
+  const textContent = (data.content || [])
+    .filter(item => item.type === 'text')
+    .map(item => item.text)
+    .join('\n\n');
+
+  if (!textContent) throw new Error('Respuesta vacía del modelo');
+  return textContent;
+}
+
+function renderCategories() {
+  const el = document.getElementById('categories');
+  el.innerHTML = Object.keys(PROMPT_CATALOG).map(cat =>
+    `<button class="pill ${cat === state.currentCategory ? 'active' : ''}" data-cat="${escapeHTML(cat)}">${escapeHTML(cat)}</button>`
+  ).join('');
+  el.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.currentCategory = btn.dataset.cat;
+      renderCategories();
+      renderPrompts();
+    });
+  });
+}
+
+function renderPrompts() {
+  const el = document.getElementById('promptList');
+  const prompts = PROMPT_CATALOG[state.currentCategory] || [];
+  el.innerHTML = prompts.map(p =>
+    `<div class="prompt-item" data-prompt="${escapeHTML(p)}">${escapeHTML(p)}</div>`
+  ).join('');
+  el.querySelectorAll('.prompt-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.getElementById('promptInput').value = item.dataset.prompt;
+    });
+  });
+}
+
+function renderResponse(entry) {
+  const el = document.getElementById('responseArea');
+  if (!entry) {
+    el.innerHTML = `<div class="empty-state"><div class="ico">◇</div><div>Selecciona o escribe un prompt y ejecuta para empezar a medir.</div></div>`;
+    return;
+  }
+  const a = entry.analysis;
+  const samsungCount = a.mentions['Samsung'] || 0;
+  const samsungPos = a.samsungPosition > 0 ? `#${a.samsungPosition}` : '—';
+  const totalBrands = Object.keys(a.mentions).length;
+  const samsungSoV = a.totalMentions > 0 ? Math.round((samsungCount / a.totalMentions) * 100) : 0;
+  el.innerHTML = `
+    <div class="response-meta">
+      <span>Prompt · ${escapeHTML(entry.prompt.slice(0, 70))}${entry.prompt.length > 70 ? '…' : ''}</span>
+      <span>${new Date(entry.timestamp).toLocaleString('es-MX')}</span>
+    </div>
+    <div class="response-text">${highlightText(entry.response)}</div>
+    <div class="response-metrics">
+      <div class="metric"><div class="metric-label">Posición Samsung</div><div class="metric-value samsung">${samsungPos}<small>de ${totalBrands}</small></div></div>
+      <div class="metric"><div class="metric-label">Menciones Samsung</div><div class="metric-value samsung">${samsungCount}</div></div>
+      <div class="metric"><div class="metric-label">SoV en respuesta</div><div class="metric-value samsung">${samsungSoV}<small>%</small></div></div>
+      <div class="metric"><div class="metric-label">Marcas detectadas</div><div class="metric-value">${totalBrands}</div></div>
+    </div>
+  `;
+}
+
+function renderDashboard() {
+  const totals = {};
+  let grandTotal = 0;
+  for (const entry of state.history) {
+    for (const [brand, count] of Object.entries(entry.analysis.mentions)) {
+      totals[brand] = (totals[brand] || 0) + count;
+      grandTotal += count;
+    }
+  }
+  const sovEl = document.getElementById('sovBars');
+  if (grandTotal === 0) {
+    sovEl.innerHTML = `<div class="empty-state" style="min-height: 200px;">Aún no hay datos.</div>`;
+  } else {
+    const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+    sovEl.innerHTML = sorted.map(([brand, count]) => {
+      const pct = (count / grandTotal) * 100;
+      const brandInfo = BRANDS.find(b => b.name === brand);
+      const color = brandInfo?.color || '#888';
+      const isTarget = brandInfo?.isTarget;
+      return `
+        <div class="sov-row ${isTarget ? 'is-target' : ''}">
+          <div class="sov-name"><span class="sov-dot" style="background:${color}"></span>${escapeHTML(brand)}</div>
+          <div class="sov-bar-track"><div class="sov-bar-fill" style="width:${pct.toFixed(1)}%; background:${color}"></div></div>
+          <div class="sov-value">${pct.toFixed(1)}%</div>
+        </div>`;
+    }).join('');
+  }
+  const histEl = document.getElementById('historyList');
+  if (state.history.length === 0) {
+    histEl.innerHTML = `<div class="empty-state" style="min-height: 200px;">No hay runs guardados.</div>`;
+  } else {
+    histEl.innerHTML = state.history.slice().reverse().map((entry, revIdx) => {
+      const idx = state.history.length - 1 - revIdx;
+      const pos = entry.analysis.samsungPosition;
+      const posLabel = pos > 0 ? `Pos #${pos}` : 'No mencionado';
+      const posClass = pos > 0 ? '' : 'miss';
+      const samsungMentions = entry.analysis.mentions['Samsung'] || 0;
+      return `
+        <div class="history-item" data-idx="${idx}">
+          <div class="history-prompt">${escapeHTML(entry.prompt)}</div>
+          <div class="history-meta">
+            <span class="pos ${posClass}">${posLabel}</span>
+            <span>${samsungMentions} menciones</span>
+            <span>${new Date(entry.timestamp).toLocaleDateString('es-MX')}</span>
+          </div>
+        </div>`;
+    }).join('');
+    histEl.querySelectorAll('.history-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const idx = parseInt(item.dataset.idx);
+        renderResponse(state.history[idx]);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+  }
+  const samsungTotal = totals['Samsung'] || 0;
+  const overallSoV = grandTotal > 0 ? Math.round((samsungTotal / grandTotal) * 100) : 0;
+  document.getElementById('stat-runs').textContent = state.history.length;
+  document.getElementById('stat-mentions').textContent = samsungTotal;
+  document.getElementById('stat-sov').textContent = grandTotal > 0 ? `${overallSoV}%` : '—';
+}
+
+function setToolbar(msg, isError = false) {
+  const el = document.getElementById('toolbarInfo');
+  el.textContent = msg;
+  el.style.color = isError ? '#fca5a5' : '';
+}
+
+function checkConfig() {
+  const ok = !CONFIG.WORKER_URL.includes('TU-SUBDOMINIO') && !CONFIG.APP_SECRET.includes('CAMBIA-ESTE');
+  document.getElementById('configWarning').style.display = ok ? 'none' : 'block';
+  return ok;
+}
+
+async function runPrompt() {
+  const prompt = document.getElementById('promptInput').value.trim();
+  if (!prompt) { setToolbar('Escribe o selecciona un prompt primero.', true); return; }
+  if (!checkConfig()) { setToolbar('Falta configurar WORKER_URL y APP_SECRET.', true); return; }
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = 'Ejecutando…';
+  document.getElementById('responseArea').innerHTML = `
+    <div class="loading-state">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+      <div class="loading-state-text">Consultando con búsqueda web…</div>
+    </div>`;
+  setToolbar('Llamando al Worker…');
+
+  try {
+    const response = await queryAI(prompt);
+    const analysis = analyzeResponse(response);
+    const entry = { prompt, response, analysis, timestamp: Date.now() };
+    state.history.push(entry);
+    saveState();
+    renderResponse(entry);
+    renderDashboard();
+    setToolbar(`Run guardado. Posición de Samsung: ${analysis.samsungPosition > 0 ? '#' + analysis.samsungPosition : 'no mencionado'}.`);
+  } catch (e) {
+    document.getElementById('responseArea').innerHTML = `
+      <div class="error-banner">Error: ${escapeHTML(e.message)}</div>
+      <div class="empty-state"><div>Verifica la URL del Worker y el APP_SECRET.</div></div>`;
+    setToolbar('Error: ' + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Ejecutar consulta';
+  }
+}
+
+function exportCSV() {
+  if (state.history.length === 0) { setToolbar('No hay datos para exportar.', true); return; }
+  const rows = [['timestamp', 'prompt', 'samsung_position', 'samsung_mentions', 'total_mentions', 'samsung_sov_pct', 'ranking', 'response']];
+  for (const entry of state.history) {
+    const a = entry.analysis;
+    const samsungCount = a.mentions['Samsung'] || 0;
+    const sov = a.totalMentions > 0 ? ((samsungCount / a.totalMentions) * 100).toFixed(1) : '0';
+    rows.push([
+      new Date(entry.timestamp).toISOString(),
+      entry.prompt,
+      a.samsungPosition > 0 ? a.samsungPosition : 'not_mentioned',
+      samsungCount, a.totalMentions, sov,
+      a.ranking.join(' > '), entry.response,
+    ]);
+  }
+  const csv = rows.map(r => r.map(escapeCSV).join(',')).join('\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `samsung_ai_visibility_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  setToolbar(`Exportados ${state.history.length} runs.`);
+}
+
+function resetAll() {
+  if (!confirm('¿Borrar todo el historial? Esta acción no se puede deshacer.')) return;
+  state.history = [];
+  saveState();
+  renderResponse(null);
+  renderDashboard();
+  setToolbar('Historial borrado.');
+}
+
+(function init() {
+  loadState();
+  checkConfig();
+  renderCategories();
+  renderPrompts();
+  renderDashboard();
+  document.getElementById('runBtn').addEventListener('click', runPrompt);
+  document.getElementById('clearBtn').addEventListener('click', () => { document.getElementById('promptInput').value = ''; });
+  document.getElementById('exportBtn').addEventListener('click', exportCSV);
+  document.getElementById('resetBtn').addEventListener('click', resetAll);
+  document.getElementById('promptInput').addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') runPrompt();
+  });
+})();
+</script>
+
+</body>
+</html>
