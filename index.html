@@ -193,11 +193,11 @@
 // ═══════════════════════════════════════════════════════════════════════════
 const CONFIG = {
   // URL de tu Cloudflare Worker desplegado (ver README paso 2)
-  WORKER_URL: 'https://samsung-ai-tracker.TU-SUBDOMINIO.workers.dev',
+  WORKER_URL: 'https://samsung-ai-tracker.adrian-ruiz.workers.dev',
 
-  // Mismo valor que pusiste en APP_SECRET en las variables del Worker
-  // Genera uno con: openssl rand -hex 32
-  APP_SECRET: 'CAMBIA-ESTE-VALOR-POR-UN-STRING-LARGO-Y-RANDOM',
+  // Pega aquí el MISMO string que pusiste en APP_SECRET del Worker en Cloudflare.
+  // ⚠️ Edita esta línea localmente antes de subir el archivo. No lo compartas.
+  APP_SECRET: '8753ea9c6d62e724cdafe08b25163234314375efbdac039d23088b2985ffc529',
 
   // Modelo de Claude a usar (sonnet 4.6 es buen balance; haiku 4.5 más barato)
   MODEL: 'claude-sonnet-4-6',
